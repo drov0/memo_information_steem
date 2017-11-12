@@ -6,7 +6,7 @@ from steem import Steem
 
 
 
-def retrieve(keyword="", account="anarchyhasnogods",sent_to="anarchyhasnogods", position=-1, keyword_and_account = False, recent = -1, step = 100):
+def retrieve(keyword="", account="anarchyhasnogods",sent_to="randowhale", position=-1, keyword_and_account = False, recent = 1, step = 5000):
     node_connection = create_connection("wss://steemd-int.steemit.com")
     s = Steem(node=node_connection)
     memo_list = []
@@ -18,17 +18,20 @@ def retrieve(keyword="", account="anarchyhasnogods",sent_to="anarchyhasnogods", 
     else:
         # If the first is 0, it checks the first one with the keyword or account
         #(or and depending on keyword and account)
-        found = False
+        found = True
         memo_list = []
-        position = -1
         # This gets the total amount of items in the accounts history
         # This it to prevent errors related to going before the creation of the account
         size = s.get_account_history(sent_to,-1,0)[0][0]
-
+        position = size
+        if position < 0:
+            position = step
         while found:
+            print(position)
             # Checks if the
+
             if recent > 0 and len(memo_list) > 0:
-                if memo_list >= recent:
+                if len(memo_list) >= recent:
                     break
 
             history = s.get_account_history(sent_to, position, step)
@@ -38,15 +41,19 @@ def retrieve(keyword="", account="anarchyhasnogods",sent_to="anarchyhasnogods", 
                 if keyword != "":
                     i[2].split(keyword)
                     if type(i[2]) == list:
-                        i[2] == i[2][1]
+                        for seg in i[2]:
+                            if seg != keyword:
+                                i[2] +=seg
                         has_keyword = True
                 has_account = i[1] == account
+                #print(i[1], account)
 
                 if keyword_and_account:
                     if has_keyword and has_account:
                         memo_list.append(i)
                 else:
                     if has_account or has_keyword:
+                        #print("added")
                         memo_list.append(i)
 
 
@@ -54,10 +61,16 @@ def retrieve(keyword="", account="anarchyhasnogods",sent_to="anarchyhasnogods", 
 
 
 
-            if position * -1 + step > size:
-                position -=size
+            if position ==step+1:
+
+                break
+
+            elif position-step < step:
+                position = step+1
+
             else:
-                position -= step
+                position -=step
+
 
         return memo_list
 
@@ -89,8 +102,12 @@ def get_memo(history_list):
 
                     if ii['op'][0] == 'transfer':
                         memo.append(ii['op'][1]['from'])
+
                         memo.append(ii['op'][1]['memo'])
+                        #print(ii)
+                        #print(memo)
                         memos.append(memo)
+
                     else:
                         memo = []
                 except:
@@ -98,12 +115,13 @@ def get_memo(history_list):
             if type(ii) == int:
 
                 memo.append(ii)
-
+    #print(memos)
     return memos
 
 
 
 
-
-
-retrieve()
+#node_connection = create_connection("wss://steemd-int.steemit.com")
+#s = Steem(node=node_connection)
+#print(get_memo(s.get_account_history("anarchyhasnogods",-2000, 1000)))
+print(retrieve(keyword="iron"))
